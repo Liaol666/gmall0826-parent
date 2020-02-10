@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSON
 import com.atguigu.gmall0826.common.constant.GmallConstant
 import com.atguigu.gmall0826.realtime.bean.StartupLog
 import com.atguigu.gmall0826.realtime.util.{MyKafkaUtil, RedisUtil}
+import org.apache.hadoop.conf.Configuration
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.SparkConf
 import org.apache.spark.broadcast.Broadcast
@@ -15,6 +16,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.{DStream, InputDStream}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import redis.clients.jedis.Jedis
+import org.apache.phoenix.spark._
 
 object DauApp {
 //  pv  uv dau
@@ -85,7 +87,7 @@ object DauApp {
       val jedis: Jedis = RedisUtil.getJedisClient
       val today: String = new SimpleDateFormat("yyyy-MM-dd").format(new Date())
       val dauKey = "dau:" + today
-      val midSet: util.Set[String] = jedis.smembers(dauKey)
+      val midSet: java.util.Set[String] = jedis.smembers(dauKey)
       jedis.close()
       // 2  发
       val midBC: Broadcast[util.Set[String]] = ssc.sparkContext.broadcast(midSet)
@@ -102,6 +104,7 @@ object DauApp {
 
     //  自检内部  分组去重 ： 0 转换成kv  1   先按mid进行分组   2 组内排序 按时间排序  3  取 top1
     val groupbyMidDstream: DStream[(String, Iterable[StartupLog])] = filteredDstream.map(startuplog=>(startuplog.mid,startuplog)).groupByKey()
+
     val realFilteredDstream: DStream[StartupLog] = groupbyMidDstream.map { case (mid, startuplogItr) =>
       val startuplogList: List[StartupLog] = startuplogItr.toList.sortWith { (startuplog1, startuplog2) =>
         startuplog1.ts < startuplog2.ts // 正序排序
@@ -111,25 +114,32 @@ object DauApp {
     }
 
 
-
+    realFilteredDstream.cache()
 
     //  利用redis保存当日访问过的用户清单
-    realFilteredDstream.foreachRDD{rdd=>
-      rdd.foreachPartition{ startupLogItr=>
+    realFilteredDstream.foreachRDD { rdd =>
+      rdd.foreachPartition { startupLogItr =>
         val jedis: Jedis = RedisUtil.getJedisClient
-       // val jedis = new Jedis("hadoop1",6379)   // ex
-        for ( startupLog <- startupLogItr ) {
-          val dauKey="dau:"+startupLog.logDate
+        // val jedis = new Jedis("hadoop1",6379)   // ex
+        for (startupLog <- startupLogItr) {
+          val dauKey = "dau:" + startupLog.logDate
           // type  set     // key    dau:2020-02-08     //value  mid
           println(startupLog)
-          jedis.sadd(dauKey,startupLog.mid)
-          jedis.expire(dauKey,60*60*24);
+          jedis.sadd(dauKey, startupLog.mid)
+          jedis.expire(dauKey, 60 * 60 * 24);
         }
         jedis.close()
 
       }
-
     }
+      realFilteredDstream.foreachRDD{rdd=>
+        rdd.saveToPhoenix("GMALL0826_DAU",
+          Seq("MID", "UID", "APPID", "AREA", "OS", "CH", "TYPE", "VS", "LOGDATE", "LOGHOUR", "TS")
+        ,new Configuration,Some("hadoop1,hadoop2,hadoop3:2181"))
+
+      }
+
+
 
 
          ssc.start()
