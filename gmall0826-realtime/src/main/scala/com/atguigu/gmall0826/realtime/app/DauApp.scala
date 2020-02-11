@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util
 import java.util.Date
 
-import com.alibaba.fastjson.JSON
+import com.alibaba.fastjson.{JSON, JSONObject}
 import com.atguigu.gmall0826.common.constant.GmallConstant
 import com.atguigu.gmall0826.realtime.bean.StartupLog
 import com.atguigu.gmall0826.realtime.util.{MyKafkaUtil, RedisUtil}
@@ -38,7 +38,7 @@ object DauApp {
     val startUpLogDstream: DStream[StartupLog] = recordDstream.map { record =>
       val jsonString: String = record.value()
       val startupLog: StartupLog = JSON.parseObject(jsonString, classOf[StartupLog])
-
+      val nObject: JSONObject = JSON.parseObject(jsonString)
       val dateFormat = new SimpleDateFormat("yyyy-MM-dd HH")
       val datetimeString: String = dateFormat.format(new Date(startupLog.ts))
       val datetimeArr: Array[String] = datetimeString.split(" ")

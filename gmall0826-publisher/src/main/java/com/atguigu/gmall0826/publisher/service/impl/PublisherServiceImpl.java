@@ -28,7 +28,7 @@ public class PublisherServiceImpl implements PublisherService {
         // hourCountMap ==> {"12":500,"11":400,......}
         Map hourCountMap=new HashMap();
         for (Map map : mapList) {
-            hourCountMap.put ( map.get("lh"),map.get("ct"));
+            hourCountMap.put ( map.get("LOGHOUR"),map.get("CT"));
         }
         return hourCountMap;
     }
