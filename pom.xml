@@ -16,6 +16,7 @@
         <module>gmall0826-mock</module>
         <module>gmall0826-logger</module>
         <module>gmall0826-realtime</module>
+        <module>gmall0826-canal</module>
     </modules>
     <packaging>pom</packaging>
 
