@@ -42,7 +42,7 @@ public class CanalClient {
                         } catch (InvalidProtocolBufferException e) {
                             e.printStackTrace();
                         }
-                        //得到行集和
+                        //得到行集合
                         List<CanalEntry.RowData> rowDatasList = rowChange.getRowDatasList();
                         //得到操作类型
                         CanalEntry.EventType eventType = rowChange.getEventType();
