@@ -20,7 +20,30 @@ case class OrderInfo(
                       out_trade_no: String,
                       trade_body: String,
                       var create_date: String,
-                      var create_hour: String
-
+                      var create_hour: String,
+                      a: String,
+                      b: String,
+                      c: String,
+                      d: String,
+                      var e: String,
+                      var f: String,
+                      g: String,
+                      h: String,
+                      i: String,
+                      j: String,
+                      var k: String,
+                      var l: String,
+                      m: String,
+                      n: String,
+                      o: String,
+                      p: String,
+                      var q: String,
+                      var r: String,
+                      s: String,
+                      t: String,
+                      u: String,
+                      v: String,
+                      var w: String,
+                      var x: String 
                     )
 
