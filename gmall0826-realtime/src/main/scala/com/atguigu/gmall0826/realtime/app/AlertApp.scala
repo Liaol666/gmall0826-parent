@@ -7,7 +7,7 @@ import java.util.Date
 import com.alibaba.fastjson.{JSON, JSONObject}
 import com.atguigu.gmall0826.common.constant.GmallConstant
 import com.atguigu.gmall0826.realtime.bean.{AlertInfo, EventInfo, StartupLog}
-import com.atguigu.gmall0826.realtime.util.MyKafkaUtil
+import com.atguigu.gmall0826.realtime.util.{MyEsUtil, MyKafkaUtil}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.{DStream, InputDStream}
@@ -56,7 +56,7 @@ object AlertApp {
       val uidSet = new util.HashSet[String]()
       val itemSet = new util.HashSet[String]()
       val eventList = new util.ArrayList[String]()
-      var ifClickItem = false
+      var ifClickItem = false   //看是否在过程中有浏览商品
       breakable(
         for (eventInfo: EventInfo <- eventInfoItr) {
           eventList.add(eventInfo.evid)
@@ -76,9 +76,18 @@ object AlertApp {
 
     val alertInfoFilteredDstream: DStream[AlertInfo] = alertInfoDstream.filter(_._1).map(_._2)
 
+    //alertInfoFilteredDstream.print(100)
+
+    alertInfoFilteredDstream.foreachRDD{ rdd=>
+      rdd.foreachPartition{ alertInfoItr=>
+        //为了达到通过id进行保存 同时利用数据库的幂等性去重 所以
+        // 每分钟相同的mid只保存一条  =》 id = mid + 分钟TS
+        val sourceList: List[(String, AlertInfo)] = alertInfoItr.toList.map(alertInfo => (alertInfo.mid + "_" + alertInfo.ts / 1000 / 60, alertInfo))
+        MyEsUtil.insertBulk(sourceList,GmallConstant.ES_INDEX_ALERT)
+      }
 
 
-    alertInfoFilteredDstream.print(100)
+    }
 
 
 
