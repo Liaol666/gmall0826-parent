@@ -152,7 +152,7 @@ object SaleApp {
 
 
 
-    saleDetailWithUserDstream.print(100)
+ //   saleDetailWithUserDstream.print(100)
 
     saleDetailWithUserDstream.foreachRDD{rdd=>
       rdd.foreachPartition{saleDetailItr=>

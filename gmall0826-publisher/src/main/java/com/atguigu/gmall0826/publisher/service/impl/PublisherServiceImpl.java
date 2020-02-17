@@ -7,6 +7,7 @@ import com.atguigu.gmall0826.publisher.service.PublisherService;
 import io.searchbox.client.JestClient;
 import io.searchbox.core.Search;
 import io.searchbox.core.SearchResult;
+import io.searchbox.core.search.aggregation.TermsAggregation;
 import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
 import org.apache.lucene.search.BooleanQuery;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,13 +135,40 @@ public class PublisherServiceImpl implements PublisherService {
         System.out.println(searchSourceBuilder.toString());
 
         Search search = new Search.Builder(searchSourceBuilder.toString()).addIndex(GmallConstant.ES_INDEX_SALE).addType("_doc").build();
+        Map resultMap=new HashMap(); // 明细、总条数 、年龄的聚合结果、性别的局和结果
         try {
             SearchResult searchResult = jestClient.execute(search);
+            //明细数据
+            List<Map> detailList=new ArrayList<>();
+            List<SearchResult.Hit<Map, Void>> hits = searchResult.getHits(Map.class);
+            for (SearchResult.Hit<Map, Void> hit : hits) {
+                detailList.add( hit.source);
+            }
+            // 总条数
+            Long total=searchResult.getTotal();
+            // 年龄的聚合结果
+            Map ageAggsMap=new HashMap();
+            List<TermsAggregation.Entry> ageEntryList = searchResult.getAggregations().getTermsAggregation("groupby_age").getBuckets();
+            for (TermsAggregation.Entry entry : ageEntryList) {
+                ageAggsMap.put(entry.getKey(),entry.getCount());
+            }
+            //  性别的聚合结果
+            Map genderAggsMap=new HashMap();
+            List<TermsAggregation.Entry> genderEntryList = searchResult.getAggregations().getTermsAggregation("groupby_gender").getBuckets();
+            for (TermsAggregation.Entry entry : genderEntryList) {
+                genderAggsMap.put(entry.getKey(),entry.getCount());
+            }
+
+            //处理返回结果
+            resultMap.put("detail",detailList);
+            resultMap.put("total",total);
+            resultMap.put("genderAggsMap",genderAggsMap);
+            resultMap.put("ageAggsMap",ageAggsMap);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return null;
+        return resultMap;
     }
 
 
