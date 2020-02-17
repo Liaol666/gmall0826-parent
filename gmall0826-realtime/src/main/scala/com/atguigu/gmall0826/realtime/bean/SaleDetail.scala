@@ -52,6 +52,7 @@ case class SaleDetail(
     if(userInfo!=null){
       this.user_id=userInfo.id
 
+      //生日 转 年龄
       val formattor = new SimpleDateFormat("yyyy-MM-dd")
       val date: util.Date = formattor.parse(userInfo.birthday)
       val curTs: Long = System.currentTimeMillis()

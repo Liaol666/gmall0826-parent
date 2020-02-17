@@ -9,4 +9,5 @@ public class GmallConstant {
     public static final String  KAFKA_TOPIC_USER="GMALL_USER";
 
     public static final String ES_INDEX_ALERT="gmall_coupon_alert0826";
+    public static final String ES_INDEX_SALE="gmall0826_sale_detail";
 }
